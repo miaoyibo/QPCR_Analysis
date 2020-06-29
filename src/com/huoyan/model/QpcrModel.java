@@ -1,7 +1,9 @@
 package com.huoyan.model;
 
-public class QpcrModel {
+public class QpcrModel implements Cloneable{
 	
+	
+
 	private String version;
 	
 	private String date;
@@ -92,6 +94,15 @@ public class QpcrModel {
 		this.type = type;
 	}
 	
-	
+	@Override
+	public QpcrModel clone()  {
+		QpcrModel qpcrModel=null;
+		try {
+			qpcrModel=(QpcrModel) super.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return qpcrModel;
+	}
 
 }

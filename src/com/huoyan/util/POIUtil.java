@@ -168,7 +168,11 @@ public class POIUtil {
 			cellValue = String.valueOf(cell.getBooleanCellValue());
 			break;
 		case Cell.CELL_TYPE_FORMULA: // 公式
-			cellValue = String.valueOf(cell.getCellFormula());
+			try {
+				cellValue = String.valueOf(cell.getNumericCellValue());
+			} catch (Exception e) {
+				cellValue = String.valueOf(cell.getRichStringCellValue());
+			}
 			break;
 		case Cell.CELL_TYPE_BLANK: // 空值
 			cellValue = "";
