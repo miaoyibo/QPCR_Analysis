@@ -25,7 +25,7 @@ import com.huoyan.util.FileChooseUtil;
 public abstract class QpcrHandle {
 	private static String[] headers = { "版号", "反应孔", "样本名称", "FAM Ct值", "VIC", "结果", "备注", "QPCR下机时间" };
 	private static String poolfile = "任务单";
-	static String pattern = "[a-zA-Z][0-9]{1,}";
+	
 	
 	private PoolHandle poolHandle;
 

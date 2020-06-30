@@ -18,7 +18,7 @@ import com.huoyan.util.POIUtil;
 public class HongShiQpcrHandle extends QpcrHandle{
 	
 	private static String sheetName = "实验数据";
-	
+	static String pattern = "[a-zA-Z][0-9]{1,}";
 	public HongShiQpcrHandle(PoolHandle poolHandle) {
 		super(poolHandle);
 		
