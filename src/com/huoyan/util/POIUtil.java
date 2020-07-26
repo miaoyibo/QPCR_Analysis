@@ -6,9 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -153,13 +156,19 @@ public class POIUtil {
 			return cellValue;
 		}
 		// 把数字当成String来读，避免出现1读成1.0的情况
-		if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
+		/*if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
 			cell.setCellType(Cell.CELL_TYPE_STRING);
-		}
+		}*/
 		// 判断数据的类型
 		switch (cell.getCellType()) {
 		case Cell.CELL_TYPE_NUMERIC: // 数字
-			cellValue = String.valueOf(cell.getNumericCellValue());
+			if (HSSFDateUtil.isCellDateFormatted(cell)) {
+				DateFormat df2 = new SimpleDateFormat("yyyy-MM-dd");
+				cellValue=df2.format(cell.getDateCellValue());
+			}else {
+				cellValue = String.valueOf(cell.getNumericCellValue());
+			}
+			
 			break;
 		case Cell.CELL_TYPE_STRING: // 字符串
 			cellValue = String.valueOf(cell.getStringCellValue());

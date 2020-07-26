@@ -23,30 +23,36 @@ import com.huoyan.model.QpcrModel;
 import com.huoyan.util.FileChooseUtil;
 
 public abstract class QpcrHandle {
-	private static String[] headers = { "°æºÅ", "·´Ó¦¿×", "Ñù±¾Ãû³Æ", "FAM CtÖµ", "VIC", "½á¹û", "±¸×¢", "QPCRÏÂ»úÊ±¼ä" };
-	private static String poolfile = "ÈÎÎñµ¥";
+	private static String[] headers = { "ç‰ˆå·", "ååº”å­”", "æ ·æœ¬åç§°", "FAM Ctå€¼", "VIC", "ç»“æœ", "å¤‡æ³¨", "QPCRä¸‹æœºæ—¶é—´" };
+	private static String poolfile = "poolä»»åŠ¡å•";
 	
 	
 	private PoolHandle poolHandle;
+	
+	private File qpcr;
+	private File task;
 
-	public QpcrHandle(PoolHandle poolHandle) {
-		System.out.println("ÓĞ²Î¹¹Ôì");
+	public QpcrHandle(PoolHandle poolHandle,File qpcr,File task) {
 		this.poolHandle = poolHandle;
-		System.out.println(poolHandle);
+		this.qpcr=qpcr;
+		this.task=task;
 	}
 
-	public void apply() throws Exception {
+	public String apply() throws Exception {
 		Map<String, CriteriaModel> criteria = parserConfig();
-		String qpcr = FileChooseUtil.chooseFiles("ÇëÑ¡ÔñqpcrÎÄ¼ş£º", JFileChooser.DIRECTORIES_ONLY);
-		if (qpcr == null) {
-			return;
-		}
-		File file = new File(qpcr);
-		File[] files = file.listFiles();
+		if (qpcr==null) {
+			String param = FileChooseUtil.chooseFiles("è¯·é€‰æ‹©qpcræ–‡ä»¶ï¼š", JFileChooser.DIRECTORIES_ONLY);
+			if (param == null) {
+				return null;
+			}
+			qpcr=new File(param);
+		}		
+		//File file = new File(qpcr);
+		File[] files = qpcr.listFiles();
 		List<QpcrModel> qpcrResult = new ArrayList<>();
 		for (File file2 : files) {
 			if (file2.isFile()) {
-				List<QpcrModel> list = readQpcrResult(file2, criteria);
+				List<QpcrModel> list = readQpcrResult(file2, criteria,task);
 				if (list != null && !list.isEmpty()) {
 					qpcrResult.addAll(list);
 				}
@@ -54,7 +60,7 @@ public abstract class QpcrHandle {
 		}
 		if (qpcrResult.isEmpty()) {
 			JOptionPane.showMessageDialog(null, "no data.");
-			return;
+			return null;
 		}
 		File pool = new File(qpcr + File.separator + poolfile);
 		if (pool.exists()) {
@@ -63,15 +69,17 @@ public abstract class QpcrHandle {
 
 		Workbook workbook = new XSSFWorkbook();
 		writeExcel(workbook, qpcrResult);
-		FileOutputStream out = new FileOutputStream("result.xlsx");
+		File result=new File("result.xlsx");
+		FileOutputStream out = new FileOutputStream(result);
 		workbook.write(out);
 		out.close();
 		workbook.close();
-		JOptionPane.showMessageDialog(null, "done.");
+		//JOptionPane.showMessageDialog(null, "done.");
+		return result.getAbsolutePath();
 	}
 
 	/***
-	 * Éú³É½á¹û
+	 * ç”Ÿæˆç»“æœ
 	 * 
 	 * @param workbook
 	 * @param typeset
@@ -79,13 +87,13 @@ public abstract class QpcrHandle {
 	 */
 	private static void writeExcel(Workbook workbook, List<QpcrModel> qpcrResult) {
 		Map<String, List<QpcrModel>> map = qpcrResult.stream().collect(Collectors.groupingBy(QpcrModel::getType));
-		List<QpcrModel> list = map.get("ÒõĞÔ");
+		List<QpcrModel> list = map.get("é˜´æ€§");
 		if (list != null) {
-			Sheet sheet = workbook.createSheet("½á¹ûÉÏ´«");
+			Sheet sheet = workbook.createSheet("ç»“æœä¸Šä¼ ");
 			sheet.setColumnWidth(1, 6000);
 			sheet.setColumnWidth(2, 6000);
 			sheet.setColumnWidth(3, 6000);
-			String[] header = { "Ñù±¾±àºÅ", "¼ì²â½á¹û£¨ÒõĞÔ/ÑôĞÔ/¼ì²âÊ§°Ü£©", "Éí·İÖ¤£¨·Ç±ØÌî£©", "»¤ÕÕ£¨·Ç±ØÌî£©" };
+			String[] header = { "æ ·æœ¬ç¼–å·", "æ£€æµ‹ç»“æœï¼ˆé˜´æ€§/é˜³æ€§/æ£€æµ‹å¤±è´¥ï¼‰", "èº«ä»½è¯ï¼ˆéå¿…å¡«ï¼‰", "æŠ¤ç…§ï¼ˆéå¿…å¡«ï¼‰" };
 			writeHeader(sheet, header);
 			int rownum = 1;
 			for (QpcrModel q : list) {
@@ -129,7 +137,7 @@ public abstract class QpcrHandle {
 	}
 
 	/***
-	 * ±íÍ·
+	 * è¡¨å¤´
 	 * 
 	 * @param sheet
 	 * @param headers
@@ -144,15 +152,15 @@ public abstract class QpcrHandle {
 	}
 
 	/***
-	 * ½âÎöqpcrÎÄ¼ş
+	 * è§£æqpcræ–‡ä»¶
 	 * 
 	 * @param qpcrfile
 	 * @param criteria
 	 * @return
 	 */
-	public abstract List<QpcrModel> readQpcrResult(File file, Map<String, CriteriaModel> criteria);
+	public abstract List<QpcrModel> readQpcrResult(File file, Map<String, CriteriaModel> criteria,File task);
 /***
- * ½âÎöÅäÖÃÎÄ¼ş
+ * è§£æé…ç½®æ–‡ä»¶
  * @return
  * @throws Exception
  */
@@ -167,19 +175,30 @@ public abstract class QpcrHandle {
 		} else {
 			pro.put("nc.vic", "32");
 			pro.put("pc.fam", "32");
-			pro.put("sample.vic", "32");
-			pro.put("sample.fam1", "38");
+			pro.put("sample.vic", "(32)");
+			pro.put("sample.fam", "[40]");
 			pro.put("sample.fam2", "38");
 		}
 
-		// ¸´²â
+		// å¤æµ‹
 		CriteriaModel c1 = new CriteriaModel();
-		c1.setFam(Double.parseDouble(pro.getProperty("sample.fam1")));
-		c1.setFamSymbol("<");
-		c1.setVic(Double.parseDouble(pro.getProperty("sample.vic")));
-		c1.setVicSymbol(">");
+		String fam = pro.getProperty("sample.fam");
+		String vic=pro.getProperty("sample.vic");
+		c1.setFam(Double.parseDouble(fam.substring(1,fam.length()-1)));
+		if (fam.startsWith("[")) {
+			c1.setFamSymbol("<=");
+		}else {
+			c1.setFamSymbol("<");
+		}
+		c1.setVic(Double.parseDouble(vic.substring(1,vic.length()-1)));
+		if (vic.startsWith("[")) {
+			c1.setVicSymbol(">=");
+		}else {
+			c1.setVicSymbol(">");
+		}
 		c1.setSpecialVicValue("NoCt");
-		map.put("¸´²â", c1);
+		map.put("å¤æµ‹", c1);
 		return map;
 	}
+
 }

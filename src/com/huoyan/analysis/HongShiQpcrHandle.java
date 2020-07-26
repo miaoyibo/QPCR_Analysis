@@ -17,21 +17,21 @@ import com.huoyan.util.POIUtil;
 
 public class HongShiQpcrHandle extends QpcrHandle{
 	
-	private static String sheetName = " µ—È ˝æ›";
+	private static String sheetName = "ÂÆûÈ™åÊï∞ÊçÆ";
 	static String pattern = "[a-zA-Z][0-9]{1,}";
-	public HongShiQpcrHandle(PoolHandle poolHandle) {
-		super(poolHandle);
+	public HongShiQpcrHandle(PoolHandle poolHandle,File qpcr,File task) {
+		super(poolHandle,qpcr,task);
 		
 	}
 
 	public static void main(String[] args) throws Exception {
-		HongShiQpcrHandle qa=new HongShiQpcrHandle(new TianjinPoolHandle());
-		qa.apply();
+		//HongShiQpcrHandle qa=new HongShiQpcrHandle(new TianjinPoolHandle());
+		//qa.apply();
 
 	}
 
 	@Override
-	public List<QpcrModel> readQpcrResult(File file, Map<String, CriteriaModel> criteria) {
+	public List<QpcrModel> readQpcrResult(File file, Map<String, CriteriaModel> criteria,File task) {
 		List<QpcrModel> results = new ArrayList<>();
 		Workbook workbook = POIUtil.getWorkBook(file);
 		if (workbook != null) {
@@ -45,7 +45,7 @@ public class HongShiQpcrHandle extends QpcrHandle{
 			int startNum = 0;
 			for (int rowNum = 3; rowNum <= lastRowNum; rowNum++) {
 				Row row = sheet.getRow(rowNum);
-				if (row != null && row.getCell(0) != null && "∑¥”¶ø◊".equals(POIUtil.getCellValue(row.getCell(0)))) {
+				if (row != null && row.getCell(0) != null && "ÂèçÂ∫îÂ≠î".equals(POIUtil.getCellValue(row.getCell(0)))) {
 					startNum = rowNum + 1;
 					break;
 				}
@@ -62,29 +62,31 @@ public class HongShiQpcrHandle extends QpcrHandle{
 				}
 				Cell famcell = famrow.getCell(12);
 				Cell viccell = vicrow.getCell(12);
-				QpcrModel qpcr = new QpcrModel();
-				results.add(qpcr);
+				QpcrModel qpcr = new QpcrModel();				
 				String sample = POIUtil.getCellValue(famrow.getCell(2));
+				if(StringUtils.isEmpty(sample)) {
+					continue;
+				}
+			    results.add(qpcr);
 				qpcr.setDate(date);
 				qpcr.setFam(QpcrRuleHandle.formatFam(POIUtil.getCellValue(famcell)));
 				qpcr.setVic(POIUtil.getCellValue(viccell));
 				qpcr.setLoc(POIUtil.getCellValue(famrow.getCell(0)));
 				qpcr.setVersion(version);
 				qpcr.setSampleId(sample);
-				String sampletype = POIUtil.getCellValue(famrow.getCell(9));
-				if ((StringUtils.isEmpty(sample) && !"¥˝≤‚—˘∆∑".equals(sampletype.trim())) || sample.contains("÷ øÿ")) {
-					qpcr.setType("÷ øÿ");
+				if (sample.contains("Ë¥®Êéß")|| sample.contains("ÂØπÁÖß")) {
+					qpcr.setType("Ë¥®Êéß");
 					qpcr.setSampleId(sample);
 					continue;
 				}
-				if (QpcrRuleHandle.charge(criteria.get("∏¥≤‚"), qpcr)) {
-					qpcr.setRemark("∏¥≤‚");
-					qpcr.setType("“Ï≥£");
+				if (QpcrRuleHandle.charge(criteria.get("Â§çÊµã"), qpcr)) {
+					qpcr.setRemark("Â§çÊµã");
+					qpcr.setType("ÂºÇÂ∏∏");
 					continue;
 				}
-				// “ı–‘
-				qpcr.setType("“ı–‘");
-				qpcr.setResult("“ı–‘");
+				// Èò¥ÊÄß
+				qpcr.setType("Èò¥ÊÄß");
+				qpcr.setResult("Èò¥ÊÄß");
 			}
 			try {
 				workbook.close();

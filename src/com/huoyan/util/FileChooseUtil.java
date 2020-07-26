@@ -8,7 +8,7 @@ public class FileChooseUtil {
 
 	
 	public static String chooseFiles(String title,int mode) throws Exception, UnsupportedLookAndFeelException {
-		// ÊÇwindows
+		// ï¿½ï¿½windows
         if (System.getProperty("os.name").toUpperCase().indexOf("WINDOWS") != -1)
         {
             UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
@@ -16,7 +16,7 @@ public class FileChooseUtil {
 		JFileChooser fileChooser = new JFileChooser("D:\\");
 		fileChooser.setFileSelectionMode(mode);
 		fileChooser.setDialogTitle(title);
-		fileChooser.setApproveButtonText("È·¶¨");
+		fileChooser.setApproveButtonText("é€‰æ‹©");
 		int returnVal = fileChooser.showOpenDialog(fileChooser);
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			String filePath = fileChooser.getSelectedFile().getAbsolutePath();
