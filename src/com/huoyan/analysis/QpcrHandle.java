@@ -74,7 +74,7 @@ public abstract class QpcrHandle {
 		workbook.write(out);
 		out.close();
 		workbook.close();
-		//JOptionPane.showMessageDialog(null, "done.");
+		JOptionPane.showMessageDialog(null, "done.");
 		return result.getAbsolutePath();
 	}
 
@@ -164,7 +164,7 @@ public abstract class QpcrHandle {
  * @return
  * @throws Exception
  */
-	private static Map<String, CriteriaModel> parserConfig() throws Exception {
+	private  Map<String, CriteriaModel> parserConfig() throws Exception {
 		Map<String, CriteriaModel> map = new HashMap<String, CriteriaModel>();
 		Properties pro = new Properties();
 		File file = new File("config.properties");
@@ -177,28 +177,14 @@ public abstract class QpcrHandle {
 			pro.put("pc.fam", "32");
 			pro.put("sample.vic", "(32)");
 			pro.put("sample.fam", "[40]");
-			pro.put("sample.fam2", "38");
+			pro.put("sample.fam2", "[38]");
 		}
 
 		// 复测
-		CriteriaModel c1 = new CriteriaModel();
-		String fam = pro.getProperty("sample.fam");
-		String vic=pro.getProperty("sample.vic");
-		c1.setFam(Double.parseDouble(fam.substring(1,fam.length()-1)));
-		if (fam.startsWith("[")) {
-			c1.setFamSymbol("<=");
-		}else {
-			c1.setFamSymbol("<");
-		}
-		c1.setVic(Double.parseDouble(vic.substring(1,vic.length()-1)));
-		if (vic.startsWith("[")) {
-			c1.setVicSymbol(">=");
-		}else {
-			c1.setVicSymbol(">");
-		}
-		c1.setSpecialVicValue("NoCt");
-		map.put("复测", c1);
+		setCriteria(map, pro);
 		return map;
 	}
+
+public abstract void setCriteria(Map<String, CriteriaModel> map, Properties pro);
 
 }

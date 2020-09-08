@@ -3,6 +3,7 @@ package com.huoyan.rule;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import com.huoyan.model.CriteriaModel;
@@ -51,6 +52,12 @@ public class QpcrRuleHandle {
 	public static String formatFam(String s) {
 		if (s!=null) {
 			s=s.trim().equals("-")?"NoCt":s;
+		}
+		return s;
+	}
+	public static String formatVic(String s) {
+		if (StringUtils.isEmpty(s)||s.trim().equals("-")) {
+			return "NoCt";
 		}
 		return s;
 	}

@@ -21,6 +21,9 @@ public class QpcrModel implements Cloneable{
 	private String sampleId;
 	
 	private String type;
+	private String sampleType;
+	
+	private String nextStep;
 
 	public String getVersion() {
 		return version;
@@ -94,6 +97,22 @@ public class QpcrModel implements Cloneable{
 		this.type = type;
 	}
 	
+	public String getSampleType() {
+		return sampleType;
+	}
+
+	public void setSampleType(String sampleType) {
+		this.sampleType = sampleType;
+	}
+
+	public String getNextStep() {
+		return nextStep;
+	}
+
+	public void setNextStep(String nextStep) {
+		this.nextStep = nextStep;
+	}
+
 	@Override
 	public QpcrModel clone()  {
 		QpcrModel qpcrModel=null;

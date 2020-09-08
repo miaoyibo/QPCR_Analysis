@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -25,8 +27,8 @@ public class HongShiQpcrHandle extends QpcrHandle{
 	}
 
 	public static void main(String[] args) throws Exception {
-		//HongShiQpcrHandle qa=new HongShiQpcrHandle(new TianjinPoolHandle());
-		//qa.apply();
+		HongShiQpcrHandle qa=new HongShiQpcrHandle(new TianjinPoolHandle(),null,null);
+		qa.apply();
 
 	}
 
@@ -79,8 +81,13 @@ public class HongShiQpcrHandle extends QpcrHandle{
 					qpcr.setSampleId(sample);
 					continue;
 				}
-				if (QpcrRuleHandle.charge(criteria.get("复测"), qpcr)) {
-					qpcr.setRemark("复测");
+				if (QpcrRuleHandle.charge(criteria.get("重提"), qpcr)) {
+					qpcr.setRemark("重提");
+					qpcr.setType("异常");
+					continue;
+				}
+				if (QpcrRuleHandle.charge(criteria.get("重Q"), qpcr)) {
+					qpcr.setRemark("重Q");
 					qpcr.setType("异常");
 					continue;
 				}
@@ -96,6 +103,37 @@ public class HongShiQpcrHandle extends QpcrHandle{
 			}
 		}
 		return results;
+	}
+
+	@Override
+	public void setCriteria(Map<String, CriteriaModel> map, Properties pro) {
+		CriteriaModel c1 = new CriteriaModel();
+		String fam = pro.getProperty("sample.fam");
+		String vic=pro.getProperty("sample.vic");
+		c1.setFam(Double.parseDouble(fam.substring(1,fam.length()-1)));
+		if (fam.startsWith("[")) {
+			c1.setFamSymbol("<=");
+		}else {
+			c1.setFamSymbol("<");
+		}
+		c1.setVic(Double.parseDouble(vic.substring(1,vic.length()-1)));
+		if (vic.startsWith("[")) {
+			c1.setVicSymbol(">=");
+		}else {
+			c1.setVicSymbol(">");
+		}
+		c1.setSpecialVicValue("NoCt");
+		map.put("重Q", c1);
+		CriteriaModel c2 = new CriteriaModel();
+		String fam2 = pro.getProperty("sample.fam2");
+		c2.setFam(Double.parseDouble(fam2.substring(1,fam2.length()-1)));
+		if (fam2.startsWith("[")) {
+			c2.setFamSymbol("<=");
+		}else {
+			c2.setFamSymbol("<");
+		}
+		map.put("重提", c2);
+		
 	}
 
 }

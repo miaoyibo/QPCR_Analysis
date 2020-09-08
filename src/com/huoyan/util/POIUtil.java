@@ -156,9 +156,9 @@ public class POIUtil {
 			return cellValue;
 		}
 		// 把数字当成String来读，避免出现1读成1.0的情况
-		/*if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
+		if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC&&!HSSFDateUtil.isCellDateFormatted(cell)) {
 			cell.setCellType(Cell.CELL_TYPE_STRING);
-		}*/
+		}
 		// 判断数据的类型
 		switch (cell.getCellType()) {
 		case Cell.CELL_TYPE_NUMERIC: // 数字
@@ -194,6 +194,20 @@ public class POIUtil {
 			break;
 		}
 		return cellValue;
+	}
+	/***
+	 * 表头
+	 * 
+	 * @param sheet
+	 * @param headers
+	 */
+	public static void writeHeader(Sheet sheet, String[] headers) {
+		Row row = sheet.createRow(0);
+		for (int i = 0; i < headers.length; i++) {
+			Cell cell = row.createCell(i);
+			cell.setCellValue(headers[i]);
+		}
+
 	}
 
 }

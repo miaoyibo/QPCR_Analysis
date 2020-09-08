@@ -2,11 +2,12 @@ package com.huoyan.analysis;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,9 +39,9 @@ public class YaRuiQpcrHandle extends QpcrHandle {
 
 	@Override
 	public List<QpcrModel> readQpcrResult(File file, Map<String, CriteriaModel> criteria,File task) {
-	/*	if (map == null) {
+		if (map == null) {
 			map = parseSampleExcel(file,task);
-		}*/
+		}
 		List<QpcrModel> results = new ArrayList<>();
 		Workbook workbook = POIUtil.getWorkBook(file);
 		if (workbook != null) {
@@ -160,6 +161,28 @@ public class YaRuiQpcrHandle extends QpcrHandle {
 		}
 		indexOf = indexOf < 0 ? name.lastIndexOf(split) : indexOf;
 		return name.substring(0, indexOf);
+	}
+
+	@Override
+	public void setCriteria(Map<String, CriteriaModel> map, Properties pro) {
+		CriteriaModel c1 = new CriteriaModel();
+		String fam = pro.getProperty("sample.fam");
+		String vic=pro.getProperty("sample.vic");
+		c1.setFam(Double.parseDouble(fam.substring(1,fam.length()-1)));
+		if (fam.startsWith("[")) {
+			c1.setFamSymbol("<=");
+		}else {
+			c1.setFamSymbol("<");
+		}
+		c1.setVic(Double.parseDouble(vic.substring(1,vic.length()-1)));
+		if (vic.startsWith("[")) {
+			c1.setVicSymbol(">=");
+		}else {
+			c1.setVicSymbol(">");
+		}
+		c1.setSpecialVicValue("NoCt");
+		map.put("复测", c1);
+		
 	}
 
 }
