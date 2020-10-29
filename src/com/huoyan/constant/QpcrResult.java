@@ -2,12 +2,13 @@ package com.huoyan.constant;
 
 public enum QpcrResult {
 
-	Negative("Negative","数据汇总",null),
-	Positive("Positive","数据汇总",null),
-	ReRq("RE+RQ","数据汇总","RE"),
-	Re("灰区","数据汇总","RE"),
-	InvalidVic("VIC失控","数据汇总","RE"),
-	Unknow("Unknown","数据汇总",null);
+	Negative("Negative","summary",null),
+	Positive("Positive","summary",null),
+	ReRq("Positive  pending","summary","RE"),
+	Re("gray area","summary","RE"),
+	InvalidVic("VIC lost control","summary","RE"),
+	InvalidFamVic("FAM,VIC no value","summary","RE"),
+	Unknow("Unknown","summary",null);
 	
 	private String value;
 	private String group;

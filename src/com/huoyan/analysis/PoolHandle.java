@@ -19,8 +19,8 @@ import com.huoyan.util.POIUtil;
 
 public abstract class PoolHandle {
 
-	private static final String prefix = "ĞÂ¹ÚÈÎÎñµ¥-";
-	private static final String sheetname = "QPCRÉÏ»ú";
+	private static final String prefix = "æ–°å† ä»»åŠ¡å•-";
+	private static final String sheetname = "QPCRä¸‹æœºå•";
 
 	public List<QpcrModel> addPoolSample(List<QpcrModel> qpcrResult, File file) {
 		//Map<String, List<QpcrModel>> map = qpcrResult.stream().collect(Collectors.groupingBy(QpcrModel::getVersion));

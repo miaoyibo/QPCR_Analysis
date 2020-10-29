@@ -5,6 +5,9 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +72,10 @@ public abstract class WriteHandle {
 
 		Workbook workbook = new XSSFWorkbook();
 		writeExcel(workbook, qpcrResult);
-		Path p = Paths.get("result.xlsx");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+		String dateTime = LocalDateTime.now(ZoneOffset.of("+8")).format(formatter);
+		String filenname = "result-" + dateTime + ".xlsx";
+		Path p = Paths.get(filenname);
 		if (Files.exists(p)) {
 			Files.delete(p);
 		}
@@ -91,10 +97,10 @@ public abstract class WriteHandle {
 	 */
 	private static void writeExcel(Workbook workbook, List<QpcrModel> qpcrResult) {
 		Map<String, List<QpcrModel>> map = qpcrResult.stream().collect(Collectors.groupingBy(QpcrModel::getType));
-		List<QpcrModel> list = map.getOrDefault("数据汇总", new ArrayList<>());
-		writeValue(workbook, "数据汇总", list);
-		List<QpcrModel> list2 = map.getOrDefault("质控数据", new ArrayList<>());
-		writeValue(workbook, "质控数据", list2);
+		List<QpcrModel> list = map.getOrDefault("summary", new ArrayList<>());
+		writeValue(workbook, "summary", list);
+		List<QpcrModel> list2 = map.getOrDefault("control", new ArrayList<>());
+		writeValue(workbook, "control", list2);
 
 	}
 
@@ -165,9 +171,9 @@ public abstract class WriteHandle {
 		cellStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
 		cellStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
 		cellStyle.setWrapText(true);
-		Font font = workbook.createFont();  
-		font.setFontHeightInPoints((short) 10);//设置字体大小   
-		font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);//粗体显示  
+		Font font = workbook.createFont();
+		font.setFontHeightInPoints((short) 10);// 设置字体大小
+		font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);// 粗体显示
 		cellStyle.setFont(font);
 		return cellStyle;
 	}

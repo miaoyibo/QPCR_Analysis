@@ -4,11 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -41,6 +43,7 @@ public class MixQpcrHandle extends WriteHandle {
 
 		positiveList.add("阳性对照");
 		positiveList.add("PC in Kit");
+		positiveList.add("PC in kit");
 	}
 	// FAM＜38→提示空白异常
 	private double blank_fam = 38d;
@@ -58,9 +61,12 @@ public class MixQpcrHandle extends WriteHandle {
 	// FAM＞38（灰区），VIC≤32→灰区，下一步操作RE
 	private double sample_grey_fam = 38d;
 	private double sample_grey_vic = 32d;
+	// true:判读为re;false:判读为阴性
+	private boolean sample_grey_show = true;
 	// VIC＞32，或者VIC无数值(VIC失控)→VIC失控，下一步操作RE
 	private double sample_invalid_vic = 32d;
 
+	private boolean sort_switch=true;
 	public MixQpcrHandle(PoolHandle poolHandle, File qpcr, File task) {
 		super(poolHandle, qpcr, task);
 		// TODO Auto-generated constructor stub
@@ -68,6 +74,7 @@ public class MixQpcrHandle extends WriteHandle {
 
 	public static void main(String[] args) throws Exception {
 		MixQpcrHandle qa = new MixQpcrHandle(new TianjinPoolHandle(), null, null);
+		qa.parserConfig();
 		qa.apply();
 
 	}
@@ -76,8 +83,7 @@ public class MixQpcrHandle extends WriteHandle {
 	public List<QpcrModel> readQpcrResult(File file, File task) throws Exception {
 		List<QpcrModel> results = new ArrayList<>();
 		Workbook workbook = POIUtil.getWorkBook(file);
-		if (workbook != null) {
-			parserConfig();
+		if (workbook != null) {		
 			Sheet sheet = null;
 			if ((sheet = workbook.getSheet("定量结果")) != null) {
 				Sheet samplesheet = workbook.getSheet("样本信息");
@@ -107,8 +113,13 @@ public class MixQpcrHandle extends WriteHandle {
 		results.forEach(q -> {
 			q.setVersion(version);
 		});
+		if (sort_switch) {
+			results=sort(results);
+		}	
 		return results;
 	}
+
+	
 
 	private Map<String, String> parseSampleId(Sheet samplesheet) {
 		Map<String, String> map = new HashMap<String, String>();
@@ -150,7 +161,7 @@ public class MixQpcrHandle extends WriteHandle {
 			results.add(qpcr);
 			qpcr.setDate(POIUtil.getCellValue(famrow.getCell(0)));
 			qpcr.setFam(QpcrRuleHandle.formatFam(POIUtil.getCellValue(famcell)));
-			qpcr.setVic(POIUtil.getCellValue(viccell));
+			qpcr.setVic(QpcrRuleHandle.formatVic(POIUtil.getCellValue(viccell)));
 			qpcr.setLoc(POIUtil.getCellValue(famrow.getCell(2)));
 			qpcr.setSampleId(sample);
 			qpcr.setSampleType(POIUtil.getCellValue(famrow.getCell(5)));
@@ -204,7 +215,7 @@ public class MixQpcrHandle extends WriteHandle {
 			results.add(qpcr);
 			qpcr.setDate(date);
 			qpcr.setFam(QpcrRuleHandle.formatFam(POIUtil.getCellValue(famcell)));
-			qpcr.setVic(POIUtil.getCellValue(viccell));
+			qpcr.setVic(QpcrRuleHandle.formatVic(POIUtil.getCellValue(viccell)));
 			qpcr.setLoc(POIUtil.getCellValue(famrow.getCell(0)));
 			qpcr.setSampleId(sample);
 			qpcr.setSampleType(sampleType);
@@ -252,27 +263,29 @@ public class MixQpcrHandle extends WriteHandle {
 		}
 		checkControllStatus(results, cs);
 	}
-
+	//TODO 把常量值提取出来
 	private void checkControllStatus(List<QpcrModel> results, ControlStatus cs) {
+		StringBuilder remark=new StringBuilder();
 		if (cs.isBlankFlag()) {
-			results.forEach(r -> r.setRemark("空白对照异常"));
-			return;
+			remark.append("Blank control anomaly");
 		}
 		if (cs.getPositiveNum() > 0) {
 			if (cs.getPositiveNum() == cs.getErrorPositiveFlag()) {
-				results.forEach(r -> {
-					r.setRemark("阳性对照异常");
-					r.setResult("整板重提");
-					r.setNextStep(null);
-				});
+				remark.append("Positive control abnormality");
 			} else if (cs.getPositiveNum() == cs.getWarningPositiveFlag()) {
-				results.forEach(q -> {
-					if (q.getType().equals("质控数据")) {
-						q.setRemark("阳参数值偏高");
-					}
-				});
+				remark.append("The positive control values were high");
 			}
+			
 		}
+		String tip=remark.toString();
+		if (StringUtils.isNotEmpty(tip)) {
+			results.forEach(r -> {
+				if (r.getType().equals("control")) {
+					r.setRemark(tip);
+				}
+			});
+		}
+		
 	}
 
 	/***
@@ -289,44 +302,51 @@ public class MixQpcrHandle extends WriteHandle {
 			FileInputStream in = new FileInputStream(file);
 			pro.load(in);
 			in.close();
-			blank_fam = Double.parseDouble(pro.getProperty("blank_fam"));
-			positive_fam = Double.parseDouble(pro.getProperty("positive_fam"));
-			sample_negative_vic = Double.parseDouble(pro.getProperty("sample_negative_vic"));
-			sample_positive_fam = Double.parseDouble(pro.getProperty("sample_positive_fam"));
-			sample_positive_vic = Double.parseDouble(pro.getProperty("sample_positive_vic"));
-			sample_re_fam_low = Double.parseDouble(pro.getProperty("sample_re_fam_low"));
-			sample_re_fam_high = Double.parseDouble(pro.getProperty("sample_re_fam_high"));
-			sample_re_vic = Double.parseDouble(pro.getProperty("sample_re_vic"));
-			sample_grey_fam = Double.parseDouble(pro.getProperty("sample_grey_fam"));
-			sample_grey_vic = Double.parseDouble(pro.getProperty("sample_grey_vic"));
-			sample_invalid_vic = Double.parseDouble(pro.getProperty("sample_invalid_vic"));
+			try {
+				blank_fam = Double.parseDouble(pro.getProperty("blank_fam"));
+				positive_fam = Double.parseDouble(pro.getProperty("positive_fam"));
+				sample_negative_vic = Double.parseDouble(pro.getProperty("sample_negative_vic"));
+				sample_positive_fam = Double.parseDouble(pro.getProperty("sample_positive_fam"));
+				sample_positive_vic = Double.parseDouble(pro.getProperty("sample_positive_vic"));
+				sample_re_fam_low = Double.parseDouble(pro.getProperty("sample_re_fam_low"));
+				sample_re_fam_high = Double.parseDouble(pro.getProperty("sample_re_fam_high"));
+				sample_re_vic = Double.parseDouble(pro.getProperty("sample_re_vic"));
+				sample_grey_fam = Double.parseDouble(pro.getProperty("sample_grey_fam"));
+				sample_grey_vic = Double.parseDouble(pro.getProperty("sample_grey_vic"));
+				sample_grey_show = Boolean.parseBoolean(pro.getProperty("sample_grey_show"));
+				sample_invalid_vic = Double.parseDouble(pro.getProperty("sample_invalid_vic"));
+				sort_switch=Boolean.parseBoolean(pro.getProperty("sort_switch"));
+			} catch (Exception e) {				
+			}
 
 		}
 	}
 
 	private void chargeSample(QpcrModel qpcr) {
-		boolean famempyt = StringUtils.isEmpty(qpcr.getFam()) || "NoCt".equals(qpcr.getFam());
-		boolean vicv = NumberUtils.isCreatable(qpcr.getVic())
-				&& Double.parseDouble(qpcr.getVic()) <= sample_negative_vic;
+		boolean numFam=NumberUtils.isCreatable(qpcr.getFam());
+		boolean numVic=NumberUtils.isCreatable(qpcr.getVic());
+
+		boolean famempyt = StringUtils.isEmpty(qpcr.getFam()) || "NoCt".equals(qpcr.getFam())||(numFam&&Double.parseDouble(qpcr.getFam())<=0);
+		boolean vicv = numVic&& Double.parseDouble(qpcr.getVic()) <= sample_negative_vic&&Double.parseDouble(qpcr.getVic())>0;
 		if (famempyt && vicv) {
 			qpcr.setResult(QpcrResult.Negative.getValue());
 			qpcr.setType(QpcrResult.Negative.getGroup());
 			return;
 		}
-		boolean pfamv = NumberUtils.isCreatable(qpcr.getFam())
-				&& Double.parseDouble(qpcr.getFam()) <= sample_positive_fam;
-		boolean pvicv = NumberUtils.isCreatable(qpcr.getVic())
-				&& Double.parseDouble(qpcr.getVic()) <= sample_positive_vic;
+		boolean pfamv = numFam
+				&& Double.parseDouble(qpcr.getFam()) <= sample_positive_fam&&Double.parseDouble(qpcr.getFam())>0;
+		boolean pvicv = numVic
+				&& Double.parseDouble(qpcr.getVic()) <= sample_positive_vic&&Double.parseDouble(qpcr.getVic())>0;
 		if (pfamv && pvicv) {
 			qpcr.setResult(QpcrResult.Positive.getValue());
 			qpcr.setType(QpcrResult.Positive.getGroup());
 			qpcr.setRemark(QpcrResult.Positive.getValue());
 			return;
 		}
-		boolean rfamvv = NumberUtils.isCreatable(qpcr.getFam())
+		boolean rfamvv = numFam
 				&& Double.parseDouble(qpcr.getFam()) <= sample_re_fam_high
 				&& Double.parseDouble(qpcr.getFam()) > sample_re_fam_low;
-		boolean rvicv = NumberUtils.isCreatable(qpcr.getVic()) && Double.parseDouble(qpcr.getVic()) <= sample_re_vic;
+		boolean rvicv =numVic&& Double.parseDouble(qpcr.getVic()) <= sample_re_vic&&Double.parseDouble(qpcr.getVic())>0;
 		if (rfamvv && rvicv) {
 			qpcr.setResult(QpcrResult.ReRq.getValue());
 			qpcr.setType(QpcrResult.ReRq.getGroup());
@@ -334,21 +354,33 @@ public class MixQpcrHandle extends WriteHandle {
 			qpcr.setRemark(QpcrResult.ReRq.getValue());
 			return;
 		}
-		boolean gfam = NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) > sample_grey_fam;
-		boolean gvic = NumberUtils.isCreatable(qpcr.getVic()) && Double.parseDouble(qpcr.getVic()) <= sample_grey_vic;
+		boolean gfam =numFam&& Double.parseDouble(qpcr.getFam()) > sample_grey_fam;
+		boolean gvic =numVic&& Double.parseDouble(qpcr.getVic()) <= sample_grey_vic&&Double.parseDouble(qpcr.getVic())>0;
 		if (gfam && gvic) {
-			qpcr.setResult(QpcrResult.Re.getValue());
-			qpcr.setType(QpcrResult.Re.getGroup());
-			qpcr.setNextStep(QpcrResult.Re.getNext());
+			if (sample_grey_show) {
+				qpcr.setResult(QpcrResult.Re.getValue());
+				qpcr.setType(QpcrResult.Re.getGroup());
+				qpcr.setNextStep(QpcrResult.Re.getNext());
+			} else {
+				qpcr.setResult(QpcrResult.Negative.getValue());
+				qpcr.setType(QpcrResult.Negative.getGroup());
+				qpcr.setRemark(QpcrResult.Re.getValue());
+			}
 			return;
 		}
-		boolean vicempyt = StringUtils.isEmpty(qpcr.getVic()) || "NoCt".equals(qpcr.getVic());
-		boolean invalidvic = NumberUtils.isCreatable(qpcr.getVic())
+		boolean vicempyt = StringUtils.isEmpty(qpcr.getVic()) || "NoCt".equals(qpcr.getVic())||(numVic&&Double.parseDouble(qpcr.getVic())<=0);
+		boolean invalidvic = numVic
 				&& Double.parseDouble(qpcr.getVic()) > sample_invalid_vic;
 		if (vicempyt || invalidvic) {
-			qpcr.setResult(QpcrResult.InvalidVic.getValue());
-			qpcr.setType(QpcrResult.InvalidVic.getGroup());
-			qpcr.setNextStep(QpcrResult.InvalidVic.getNext());
+			if (famempyt&&vicempyt) {
+				qpcr.setResult(QpcrResult.InvalidFamVic.getValue());
+				qpcr.setType(QpcrResult.InvalidFamVic.getGroup());
+				qpcr.setNextStep(QpcrResult.InvalidFamVic.getNext());
+			}else {
+				qpcr.setResult(QpcrResult.InvalidVic.getValue());
+				qpcr.setType(QpcrResult.InvalidVic.getGroup());
+				qpcr.setNextStep(QpcrResult.InvalidVic.getNext());
+			}			
 			return;
 		}
 		qpcr.setResult(QpcrResult.Unknow.getValue());
@@ -358,14 +390,14 @@ public class MixQpcrHandle extends WriteHandle {
 
 	private boolean chargeControlStatus(QpcrModel qpcr, ControlStatus cs) {
 		if (findBlankControl(qpcr)) {
-			qpcr.setType("质控数据");
+			qpcr.setType("control");
 			if (checkBlankControl(qpcr)) {
 				cs.setBlankFlag(true);
 			}
 			return true;
 		}
 		if (findPositiveControl(qpcr)) {
-			qpcr.setType("质控数据");
+			qpcr.setType("control");
 			cs.setPositiveNum(cs.getPositiveNum() + 1);
 			if (checkErrorPositiveControl(qpcr)) {
 				cs.setErrorPositiveFlag(cs.getErrorPositiveFlag() + 1);
@@ -376,7 +408,7 @@ public class MixQpcrHandle extends WriteHandle {
 		}
 		String sample = qpcr.getSampleId();
 		if (sample.contains("质控") || sample.contains("对照") || sample.contains("作废")) {
-			qpcr.setType("质控数据");
+			qpcr.setType("control");
 			return true;
 		}
 		return false;
@@ -401,15 +433,27 @@ public class MixQpcrHandle extends WriteHandle {
 	}
 
 	private boolean checkBlankControl(QpcrModel qpcr) {
-		return NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) < blank_fam;
+		return NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) < blank_fam && Double.parseDouble(qpcr.getFam())>0;
 	}
 
 	private boolean checkErrorPositiveControl(QpcrModel qpcr) {
-		return StringUtils.isEmpty(qpcr.getFam()) || "NoCt".equals(qpcr.getFam());
+		return StringUtils.isEmpty(qpcr.getFam()) || "NoCt".equals(qpcr.getFam())||(NumberUtils.isCreatable(qpcr.getFam())&&Double.parseDouble(qpcr.getFam())<=0);
 	}
 
 	private boolean checkWarningPositiveControl(QpcrModel qpcr) {
 		return NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) > positive_fam;
 	}
-
+	private List<QpcrModel> sort(List<QpcrModel> results) {
+		try {
+			results=results.stream().sorted(Comparator.comparing(QpcrModel::getLoc,(x,y)->{
+				Integer a=Integer.parseInt(x.substring(1));
+				Integer b=Integer.parseInt(y.substring(1));
+				return a.compareTo(b);
+			}).thenComparing(Comparator.comparing(QpcrModel::getLoc,(x,y)->{
+				return x.substring(0,1).compareTo(y.substring(0,1));
+			}))).collect(Collectors.toList());
+		} catch (Exception e) {
+		}
+		return results;
+	}
 }

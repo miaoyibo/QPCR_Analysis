@@ -51,13 +51,16 @@ public class QpcrRuleHandle {
 	
 	public static String formatFam(String s) {
 		if (s!=null) {
-			s=s.trim().equals("-")?"NoCt":s;
+			s=s.trim();
+			if (s.equals("-")||s.equals("NoCt")) {
+				return "";
+			}
 		}
 		return s;
 	}
 	public static String formatVic(String s) {
 		if (StringUtils.isEmpty(s)||s.trim().equals("-")) {
-			return "NoCt";
+			return "";
 		}
 		return s;
 	}
