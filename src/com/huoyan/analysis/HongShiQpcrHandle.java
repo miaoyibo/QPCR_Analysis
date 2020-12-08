@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -52,9 +53,10 @@ public class HongShiQpcrHandle extends QpcrHandle{
 					break;
 				}
 			}
-			for (int rowNum = startNum; rowNum <= lastRowNum; rowNum = rowNum + 2) {
+			for (int rowNum = startNum; rowNum <= lastRowNum; rowNum = rowNum + 3) {
 				Row famrow = sheet.getRow(rowNum);
 				Row vicrow = sheet.getRow(rowNum + 1);
+				Row controlrow = sheet.getRow(rowNum + 2);
 				if (famrow == null || vicrow == null) {
 					continue;
 				}
@@ -71,17 +73,25 @@ public class HongShiQpcrHandle extends QpcrHandle{
 				}
 			    results.add(qpcr);
 				qpcr.setDate(date);
-				qpcr.setFam(QpcrRuleHandle.formatFam(POIUtil.getCellValue(famcell)));
+				qpcr.setFam(POIUtil.getCellValue(famcell));
 				qpcr.setVic(POIUtil.getCellValue(viccell));
 				qpcr.setLoc(POIUtil.getCellValue(famrow.getCell(0)));
 				qpcr.setVersion(version);
 				qpcr.setSampleId(sample);
+				qpcr.setSelfControl(POIUtil.getCellValue(controlrow.getCell(12)));
 				if (sample.contains("质控")|| sample.contains("对照")) {
 					qpcr.setType("质控");
 					qpcr.setSampleId(sample);
 					continue;
 				}
-				if (QpcrRuleHandle.charge(criteria.get("重提"), qpcr)) {
+				if ("NoCt".equals(qpcr.getFam())&&"NoCt".equals(qpcr.getVic())&&NumberUtils.isCreatable(qpcr.getSelfControl())) {
+					qpcr.setType("阴性");
+					qpcr.setResult("阴性");
+				}else {
+					qpcr.setRemark("重Q");
+					qpcr.setType("异常");
+				}
+			/*	if (QpcrRuleHandle.charge(criteria.get("重提"), qpcr)) {
 					qpcr.setRemark("重提");
 					qpcr.setType("异常");
 					continue;
@@ -92,8 +102,7 @@ public class HongShiQpcrHandle extends QpcrHandle{
 					continue;
 				}
 				// 阴性
-				qpcr.setType("阴性");
-				qpcr.setResult("阴性");
+*/				
 			}
 			try {
 				workbook.close();

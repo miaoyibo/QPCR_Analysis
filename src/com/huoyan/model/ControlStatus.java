@@ -1,10 +1,15 @@
 package com.huoyan.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ControlStatus {
 	boolean blankFlag;
 	int positiveNum;
 	int errorPositiveFlag;
 	int warningPositiveFlag;
+	
+	List<QpcrModel> positiveControls=new ArrayList<QpcrModel>();
 	
 	public ControlStatus(boolean blankFlag, int positiveNum, int errorPositiveFlag, int warningPositiveFlag) {
 		super();
@@ -37,6 +42,13 @@ public class ControlStatus {
 	public void setWarningPositiveFlag(int warningPositiveFlag) {
 		this.warningPositiveFlag = warningPositiveFlag;
 	}
+	public List<QpcrModel> getPositiveControls() {
+		return positiveControls;
+	}
+	public void setPositiveControls(List<QpcrModel> positiveControls) {
+		this.positiveControls = positiveControls;
+	}
+	
 	
 
 

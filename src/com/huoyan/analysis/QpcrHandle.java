@@ -23,7 +23,7 @@ import com.huoyan.model.QpcrModel;
 import com.huoyan.util.FileChooseUtil;
 
 public abstract class QpcrHandle {
-	private static String[] headers = { "版号", "反应孔", "样本名称", "FAM Ct值", "VIC", "结果", "备注", "QPCR下机时间" };
+	private static String[] headers = { "版号", "反应孔", "样本名称", "ORF1ab", "N","内参", "结果", "备注", "QPCR下机时间" };
 	private static String poolfile = "pool任务单";
 	
 	
@@ -124,11 +124,13 @@ public abstract class QpcrHandle {
 				Cell cell4 = row.createCell(4);
 				cell4.setCellValue(qpcrModel.getVic());
 				Cell cell5 = row.createCell(5);
-				cell5.setCellValue(qpcrModel.getResult());
+				cell5.setCellValue(qpcrModel.getSelfControl());
 				Cell cell6 = row.createCell(6);
-				cell6.setCellValue(qpcrModel.getRemark());
+				cell6.setCellValue(qpcrModel.getResult());
 				Cell cell7 = row.createCell(7);
-				cell7.setCellValue(qpcrModel.getDate());
+				cell7.setCellValue(qpcrModel.getRemark());
+				Cell cell8 = row.createCell(8);
+				cell8.setCellValue(qpcrModel.getDate());
 				rownum++;
 			}
 

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -47,8 +48,9 @@ public class MixQpcrHandle extends WriteHandle {
 	}
 	// FAM＜38→提示空白异常
 	private double blank_fam = 38d;
-	// 两个阳参FAM＞29,提示阳参数值偏高。两个阳参FAM无数值→提示阳参异常，整版重提
+	// 两个阳参FAM/VIC＞29,提示阳参数值偏高。两个阳参FAM/VIC无数值→提示阳参异常，整版重提
 	private double positive_fam = 29d;
+	private double positive_vic = 29d;
 	// FAM无数值，VIC≤32→Negative
 	private double sample_negative_vic = 32d;
 	// FAM≤34，VIC≤32→Positive
@@ -270,10 +272,25 @@ public class MixQpcrHandle extends WriteHandle {
 			remark.append("Blank control anomaly");
 		}
 		if (cs.getPositiveNum() > 0) {
-			if (cs.getPositiveNum() == cs.getErrorPositiveFlag()) {
+			/*if (cs.getPositiveNum() == cs.getErrorPositiveFlag()) {
 				remark.append("Positive control abnormality");
 			} else if (cs.getPositiveNum() == cs.getWarningPositiveFlag()) {
 				remark.append("The positive control values were high");
+			}*/
+			List<QpcrModel> positiveControls = cs.getPositiveControls();
+			Optional<QpcrModel> vicOptional = positiveControls.stream().filter(p->(NumberUtils.isCreatable(p.getVic()) && Double.parseDouble(p.getVic()) > positive_vic)||isEmpytOfQpcr(p.getVic())).findFirst();
+			if (vicOptional.isPresent()) {
+				remark.append("Positive control abnormality");
+			}else {
+				 Optional<QpcrModel> famOptional = positiveControls.stream().filter(p->NumberUtils.isCreatable(p.getFam())&&Double.parseDouble(p.getFam())<=positive_fam).findFirst();
+				 if (!famOptional.isPresent()) {
+					 List<QpcrModel> list = positiveControls.stream().filter(p->NumberUtils.isCreatable(p.getFam())&&Double.parseDouble(p.getFam())>positive_fam).collect(Collectors.toList());
+					 if (list.size()==positiveControls.size()) {
+						 remark.append("The positive control values were high");
+					}else {
+						remark.append("Positive control abnormality");
+					}
+				}
 			}
 			
 		}
@@ -305,6 +322,7 @@ public class MixQpcrHandle extends WriteHandle {
 			try {
 				blank_fam = Double.parseDouble(pro.getProperty("blank_fam"));
 				positive_fam = Double.parseDouble(pro.getProperty("positive_fam"));
+				positive_vic = Double.parseDouble(pro.getProperty("positive_vic"));
 				sample_negative_vic = Double.parseDouble(pro.getProperty("sample_negative_vic"));
 				sample_positive_fam = Double.parseDouble(pro.getProperty("sample_positive_fam"));
 				sample_positive_vic = Double.parseDouble(pro.getProperty("sample_positive_vic"));
@@ -404,6 +422,7 @@ public class MixQpcrHandle extends WriteHandle {
 			} else if (checkWarningPositiveControl(qpcr)) {
 				cs.setWarningPositiveFlag(cs.getWarningPositiveFlag() + 1);
 			}
+		    cs.getPositiveControls().add(qpcr);
 			return true;
 		}
 		String sample = qpcr.getSampleId();
@@ -437,11 +456,14 @@ public class MixQpcrHandle extends WriteHandle {
 	}
 
 	private boolean checkErrorPositiveControl(QpcrModel qpcr) {
-		return StringUtils.isEmpty(qpcr.getFam()) || "NoCt".equals(qpcr.getFam())||(NumberUtils.isCreatable(qpcr.getFam())&&Double.parseDouble(qpcr.getFam())<=0);
+		return isEmpytOfQpcr(qpcr.getFam())||isEmpytOfQpcr(qpcr.getVic());
 	}
-
+	private boolean isEmpytOfQpcr(String value) {
+		return StringUtils.isEmpty(value) || "NoCt".equals(value)||(NumberUtils.isCreatable(value)&&Double.parseDouble(value)<=0);
+	}
 	private boolean checkWarningPositiveControl(QpcrModel qpcr) {
-		return NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) > positive_fam;
+		return (NumberUtils.isCreatable(qpcr.getFam()) && Double.parseDouble(qpcr.getFam()) > positive_fam)||
+				(NumberUtils.isCreatable(qpcr.getVic()) && Double.parseDouble(qpcr.getVic()) > positive_vic);
 	}
 	private List<QpcrModel> sort(List<QpcrModel> results) {
 		try {
